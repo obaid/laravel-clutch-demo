@@ -70,6 +70,36 @@ flowchart TB
 
 The two edges leaving `Clutch::policy()` are where the whole thing turns. A read or a reversible write just runs. An irreversible one writes a pending approval and the worker exits, so no process, connection or open transaction is held while you decide. The approval then arrives on a completely unrelated request, and the run picks up where it stopped.
 
+## Workflows
+
+The assistant panel is one half. The other is under **Workflows**, and it is the
+part that is hard to believe without watching it.
+
+![The quarterly review workflow, paused: four steps done, one waiting for a human, one not yet run](art/workflow.jpg)
+
+The quarterly review is six steps. Find the deals that have gone quiet, total the
+pipeline, ask the agent what is at risk, draft an email for each one, stop for a
+human, send. The control flow is ordinary PHP in `app/Ai/Workflows/QuarterlyReview.php`;
+the agent is called twice, at the two points where judgement is actually needed.
+
+What the page is really showing is underneath that, in **Passes through handle()**:
+
+```
+pass 1   stale ran       pipeline ran       summarise ran       draft ran
+pass 2   stale skipped   pipeline skipped   summarise skipped   draft skipped   send ran
+```
+
+Approving does not continue from where the code stopped. The body runs again from
+the top, in a different process, and every step that already finished returns its
+stored result instead of running. Only `send` is new work.
+
+That is why the emails go out once. Press **Try to break it** and interrupt the run
+however you like: kill the worker, run the reaper, retry a run that already
+finished. The counter underneath stays at one email per deal.
+
+Move the send outside its `step()` and the second pass emails everyone twice. That
+one line is the whole discipline.
+
 ## Why a CRM
 
 Because the interesting part of an agent is not the chat. It is what happens when the agent wants to email a prospect or discount a deal, and someone has to decide.
@@ -85,6 +115,8 @@ Every screen here is something that would go wrong in a naive build:
 | Approve it, in the panel | The run resumes in a different process and the table updates behind you |
 | Press "deliver the discount twice more" | The tool body runs zero extra times |
 | Press "kill the worker", then "run the reaper" | It recovers from its last checkpoint |
+| Approve a workflow, hours later | The body re-enters and skips every finished step |
+| Retry a workflow that already finished | Nothing runs, and nothing is sent again |
 
 ## Running it
 
@@ -149,6 +181,8 @@ app/Ai/Tools/LogNote.php       Reversible, runs freely
 app/Ai/Tools/MoveDealStage.php Reversible, runs freely
 app/Ai/Tools/EmailContact.php  Irreversible, approvable, idempotent
 app/Ai/Tools/ApplyDiscount.php Irreversible, approvable, idempotent
+
+app/Ai/Workflows/QuarterlyReview.php  Six steps, one pause, one irreversible send
 ```
 
 Five of those seven run without ever asking you anything. The session is in `ApproveSensitive` mode, so Clutch lets read-only and reversible tools through and stops only on the two that are irreversible. Approving every read would just train you to click Approve without looking, which defeats the point of having the two that matter.
@@ -171,7 +205,9 @@ The panel is one `EventSource` against `/api/clutch/runs/{run}/events?after={cur
 ./vendor/bin/pest
 ```
 
-21 tests covering the CRM pages, the pane fragments, the approval pause, resuming from a separate request, rejection reaching the agent, idempotent discounting, and recovery from a killed worker. They use Laravel AI's fake gateway, so the real driver, coordinator, broker and ledger all run. No API key needed.
+33 tests covering the CRM pages, the pane fragments, the approval pause, resuming from a separate request, rejection reaching the agent, idempotent discounting, and recovery from a killed worker. They use Laravel AI's fake gateway, so the real driver, coordinator, broker and ledger all run. No API key needed.
+
+Twelve of those are the workflow, and almost every assertion in them is a count. That is the point: what a durable workflow promises is not that it gets the right answer once, it is that interrupting it does not make it do the work twice.
 
 ## A note on what this skips
 
