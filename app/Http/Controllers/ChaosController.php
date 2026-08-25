@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Models\Post;
+use App\Models\Deal;
 use Clutch\Laravel\Enums\RunStatus;
 use Clutch\Laravel\Jobs\ReapAbandonedRuns;
 use Clutch\Laravel\Models\Run;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
@@ -25,7 +26,7 @@ class ChaosController extends Controller
      * exactly the state a SIGKILL leaves behind: no failure was ever recorded,
      * because there was nobody left to record it.
      */
-    public function killWorker(string $runId)
+    public function killWorker(string $runId): JsonResponse
     {
         $run = Run::query()->findOrFail($runId);
 
@@ -35,7 +36,9 @@ class ChaosController extends Controller
             'heartbeat_at' => now()->subHour(),
         ])->save();
 
-        return back()->with('chaos', 'Worker killed. The run still claims to be running with a stale heartbeat. Run the reaper to recover it.');
+        return response()->json([
+            'message' => 'Worker killed. The run still claims to be running with a stale heartbeat, which is the state a SIGKILL leaves behind.',
+        ]);
     }
 
     /**
@@ -44,57 +47,76 @@ class ChaosController extends Controller
      * Fails the orphaned run and queues a fresh attempt from its last
      * checkpoint. The publish counter on the post is the thing to watch.
      */
-    public function reap()
+    public function reap(): JsonResponse
     {
         dispatch_sync(new ReapAbandonedRuns(staleAfterSeconds: 60, retry: true));
 
-        return back()->with('chaos', 'Reaper swept. Any abandoned run was failed and retried from its checkpoint.');
+        return response()->json([
+            'message' => 'Reaper swept. Any abandoned run was failed and retried from its last checkpoint.',
+        ]);
     }
 
     /**
      * Ask a running run to stop.
      */
-    public function cancel(Request $request, string $runId)
+    public function cancel(Request $request, string $runId): JsonResponse
     {
         Run::query()->findOrFail($runId)->cancel(
-            $request->string('reason')->toString() ?: 'Cancelled from the demo UI.'
+            $request->string('reason')->toString() ?: 'Cancelled from the support desk.'
         );
 
-        return back()->with('chaos', 'Cancellation requested. No new step or tool will start.');
+        return response()->json([
+            'message' => 'Cancellation requested. No new step or tool will start.',
+        ]);
     }
 
     /**
-     * Try to publish the same post twice, by hand.
+     * Deliver the same discount twice more, by hand.
      *
-     * The ledger should refuse the second one without the tool body running,
-     * which the counter on the post proves.
+     * Two fresh tool-call IDs for one side effect, which is exactly what a
+     * crash and retry produce. The ledger refuses both without the tool body
+     * running, and the counter on the deal is the proof.
      */
-    public function doublePublish(string $runId)
+    public function doubleDiscount(Request $request, string $runId): JsonResponse
     {
         $run = Run::query()->findOrFail($runId);
-        $post = Post::query()->where('session_id', $run->session_id)->firstOrFail();
 
-        $before = $post->publish_attempts;
+        $deal = Deal::query()->whereNotNull('discount_percent')->latest('updated_at')->first();
+
+        if (! $deal) {
+            return response()->json([
+                'message' => 'No deal has been discounted yet, so there is nothing to double.',
+            ], 422);
+        }
+
+        $before = $deal->discount_attempts;
 
         $ledger = app(\Clutch\Laravel\Tools\ToolExecutionLedger::class);
-        $tool = new \App\Ai\Tools\PublishPost;
+        $tool = new \App\Ai\Tools\ApplyDiscount;
 
         foreach (['manual_a', 'manual_b'] as $callId) {
             $invocation = new \Clutch\Laravel\Data\ToolInvocation(
                 sessionId: $run->session_id,
                 runId: $run->id,
                 toolCallId: $callId,
-                toolName: 'publish_post',
-                arguments: ['post_id' => $post->id],
+                toolName: 'apply_discount',
+                arguments: ['reference' => $deal->reference],
             );
 
             $ledger->guard($invocation, $tool, fn (): string => (string) $tool->handle(
-                new \Laravel\Ai\Tools\Request(['post_id' => $post->id], $callId)
+                new \Laravel\Ai\Tools\Request([
+                    'reference' => $deal->reference,
+                    'percent' => 40,
+                    'justification' => 'manual replay',
+                ], $callId)
             ));
         }
 
-        $after = $post->refresh()->publish_attempts;
+        $extra = $deal->refresh()->discount_attempts - $before;
 
-        return back()->with('chaos', "Asked to publish twice more. The tool body ran ".($after - $before)." extra time(s), not 2.");
+        return response()->json([
+            'message' => "Delivered the discount on {$deal->reference} twice more. The tool body ran {$extra} extra time(s), not 2.",
+        ]);
     }
+
 }
