@@ -126,6 +126,10 @@ class WorkflowController extends Controller
             'artifacts' => $run->artifacts()->get()
                 ->map(fn ($a): array => ['id' => $a->id, 'name' => $a->name, 'bytes' => $a->size_bytes])
                 ->all(),
+            // A reaped run is failed and its work continues as a new attempt.
+            // Without these two links the demo looks like it simply broke.
+            'retriedAs' => Run::query()->where('retry_of_run_id', $run->id)->latest('created_at')->first(),
+            'retryOf' => $run->retry_of_run_id,
             'emailCount' => \App\Models\Activity::query()
                 ->where('kind', 'email')
                 ->where('by_agent', true)

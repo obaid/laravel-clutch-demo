@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "02b98b177bf24c7ed852ebdf43a3886c",
+    "content-hash": "0fb61f920dd40d91ed038511b7cd70a0",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -2834,16 +2834,16 @@
         },
         {
             "name": "obaid/laravel-clutch",
-            "version": "v0.3.1",
+            "version": "v0.3.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/obaid/laravel-clutch.git",
-                "reference": "c544aa103d39e9d7e252448a62708a81a22152c5"
+                "reference": "ef12c0f263fa56064fc9cae1f9bffe0cb83b7aa3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/obaid/laravel-clutch/zipball/c544aa103d39e9d7e252448a62708a81a22152c5",
-                "reference": "c544aa103d39e9d7e252448a62708a81a22152c5",
+                "url": "https://api.github.com/repos/obaid/laravel-clutch/zipball/ef12c0f263fa56064fc9cae1f9bffe0cb83b7aa3",
+                "reference": "ef12c0f263fa56064fc9cae1f9bffe0cb83b7aa3",
                 "shasum": ""
             },
             "require": {
@@ -2904,9 +2904,9 @@
             ],
             "support": {
                 "issues": "https://github.com/obaid/laravel-clutch/issues",
-                "source": "https://github.com/obaid/laravel-clutch/tree/v0.3.1"
+                "source": "https://github.com/obaid/laravel-clutch/tree/v0.3.2"
             },
-            "time": "2026-08-25T17:09:49+00:00"
+            "time": "2026-08-25T17:36:29+00:00"
         },
         {
             "name": "phpoption/phpoption",

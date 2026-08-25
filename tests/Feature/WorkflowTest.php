@@ -228,3 +228,26 @@ function stepsIn(Run $run, bool $replayed): array
         ->values()
         ->all();
 }
+
+it('links a reaped run to the attempt that replaced it', function (): void {
+    $run = QuarterlyReview::start()->dispatch(['stale_after_days' => 7]);
+
+    $run->forceFill([
+        'status' => RunStatus::Running,
+        'heartbeat_at' => now()->subHour(),
+        'started_at' => now()->subHour(),
+    ])->save();
+
+    dispatch_sync(new ReapAbandonedRuns(staleAfterSeconds: 60, retry: true));
+
+    $retry = Run::query()->where('retry_of_run_id', $run->id)->firstOrFail();
+
+    // The new attempt recovered to the same pause without redoing the work.
+    expect($retry->status)->toBe(RunStatus::AwaitingApproval)
+        ->and(stepsIn($retry, replayed: true))->toContain('stale', 'pipeline', 'summarise', 'draft')
+        ->and(stepsIn($retry, replayed: false))->toBeEmpty()
+        ->and(($this->emails)())->toBe(0);
+
+    // And the demo says so, rather than looking like it simply broke.
+    $this->get('/workflows/'.$run->id)->assertOk()->assertSee('started another one', false);
+});

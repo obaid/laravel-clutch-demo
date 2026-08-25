@@ -5,7 +5,25 @@
     <div class="flex items-center gap-3 mb-5">
         <span id="wf-status">@include('workflows._status', ['status' => $run->status->value])</span>
         <a href="{{ route('workflows.index') }}" class="text-[12px] mute hover:underline">All runs</a>
+
+        @isset($retryOf)
+            <span class="text-[12px] mute">
+                attempt {{ $run->attempt }} ·
+                <a href="{{ route('workflows.show', $retryOf) }}" class="hover:underline"
+                   style="color:var(--blue)">the attempt before this one</a>
+            </span>
+        @endisset
     </div>
+
+    @if ($retriedAs)
+        <div class="rounded border mb-5 px-4 py-3 text-[13px]"
+             style="background:var(--blue-soft);border-color:var(--blue)">
+            This attempt was abandoned, so the harness started another one.
+            <a href="{{ route('workflows.show', $retriedAs->id) }}" class="font-semibold hover:underline"
+               style="color:var(--blue)">Open attempt {{ $retriedAs->attempt }}</a>
+            to see it pick up from the last checkpoint with every finished step skipped.
+        </div>
+    @endif
 
     {{-- The plan. Every step the job can take, so what has not happened yet is
          as visible as what has. --}}
