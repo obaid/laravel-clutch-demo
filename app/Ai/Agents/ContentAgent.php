@@ -8,8 +8,6 @@ use App\Ai\Tools\FetchUrl;
 use App\Ai\Tools\PublishPost;
 use App\Ai\Tools\SaveDraft;
 use Clutch\Laravel\Facades\Clutch;
-use Laravel\Ai\Attributes\Model;
-use Laravel\Ai\Attributes\Provider;
 use Laravel\Ai\Concerns\RemembersConversations;
 use Laravel\Ai\Contracts\Agent;
 use Laravel\Ai\Contracts\HasTools;
@@ -24,12 +22,33 @@ use Stringable;
  * RemembersConversations trait, which is what lets a session continue across
  * requests, workers, and deploys.
  */
-#[Provider('anthropic')]
-#[Model('claude-sonnet-5')]
 class ContentAgent implements Agent, HasTools, RemembersConversationsContract
 {
     use Promptable;
     use RemembersConversations;
+
+    /**
+     * Which provider answers, taken from AI_PROVIDER.
+     *
+     * Left to configuration rather than pinned with an attribute, so the demo
+     * runs on whichever account you happen to have. Returning null would fall
+     * back to ai.default, which is the same value.
+     */
+    public function provider(): ?string
+    {
+        return config('ai.default');
+    }
+
+    /**
+     * Which model, taken from AI_MODEL.
+     *
+     * Null lets the provider pick its own default: gpt-5.4 on OpenAI,
+     * claude-sonnet-5 on Anthropic. Both are fine for this.
+     */
+    public function model(): ?string
+    {
+        return env('AI_MODEL') ?: null;
+    }
 
     public function instructions(): Stringable|string
     {

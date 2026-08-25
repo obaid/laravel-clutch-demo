@@ -4,9 +4,17 @@
 @section('content')
     @unless ($configured)
         <div class="panel rounded-lg px-4 py-3 mb-6 border-l-2 border-l-rose-400 text-sm">
-            No <code>ANTHROPIC_API_KEY</code> is set, so runs will fail at the provider.
-            Add one to <code>.env</code> and restart the queue worker.
+            The <code class="accent">{{ $provider }}</code> provider has no API key, so runs
+            will fail. Set
+            <code>{{ strtoupper($provider) }}_API_KEY</code> in <code>.env</code>
+            and restart the queue worker.
+            <span class="text-slate-500">Switch providers with <code>AI_PROVIDER</code>.</span>
         </div>
+    @else
+        <p class="text-xs text-slate-500 mb-6">
+            Answering with <code class="accent">{{ $provider }}</code>.
+            Change it with <code>AI_PROVIDER</code> in <code>.env</code>.
+        </p>
     @endunless
 
     <div class="panel rounded-xl p-6 mb-8">

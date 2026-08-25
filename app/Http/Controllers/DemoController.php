@@ -24,7 +24,8 @@ class DemoController extends Controller
         return view('demo.index', [
             'sessions' => Session::query()->latest()->limit(15)->get(),
             'pending' => Approval::query()->pending()->count(),
-            'configured' => filled(config('ai.providers.anthropic.key')),
+            'provider' => $provider = (string) config('ai.default'),
+            'configured' => filled(config("ai.providers.{$provider}.key")),
         ]);
     }
 

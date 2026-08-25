@@ -11,11 +11,8 @@ use Clutch\Laravel\Enums\RunStatus;
 use Clutch\Laravel\Facades\Clutch;
 use Clutch\Laravel\Models\Approval;
 use Clutch\Laravel\Tools\ToolExecutionLedger;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Ai\Approvals\PendingApproval;
 use Laravel\Ai\Responses\AgentResponse;
-
-uses(RefreshDatabase::class);
 
 /**
  * These exercise the real driver, coordinator, approval broker and ledger.

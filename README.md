@@ -19,7 +19,8 @@ A demo that prompts an agent and prints the answer shows nothing, because [Larav
 
 ## Running it
 
-You need PHP 8.3+ and an Anthropic API key.
+You need PHP 8.3+ and an API key for one model provider. OpenAI and Anthropic
+both work; anything Laravel AI supports should.
 
 ```bash
 git clone https://github.com/obaid/laravel-clutch-demo
@@ -33,11 +34,27 @@ touch database/database.sqlite
 php artisan migrate
 ```
 
-Put your key in `.env`:
+Pick a provider and give it a key in `.env`:
 
 ```env
+AI_PROVIDER=openai
+OPENAI_API_KEY=sk-...
+```
+
+or
+
+```env
+AI_PROVIDER=anthropic
 ANTHROPIC_API_KEY=sk-ant-...
 ```
+
+Leave `AI_MODEL` blank and the provider picks its own default, which is
+`gpt-5.4` on OpenAI and `claude-sonnet-5` on Anthropic. Set it if you want
+something else.
+
+The agent has no opinion about which provider answers. It reads `ai.default`
+rather than pinning one with an attribute, which is why switching is an env
+change rather than a code change.
 
 Then run the app and a worker, in two terminals:
 
@@ -91,7 +108,7 @@ The UI is deliberately thin, because Clutch already ships the endpoints it needs
 ./vendor/bin/pest
 ```
 
-The suite covers the whole pipeline, including the approval pause, resuming from a separate request, idempotent publishing, and recovery from a killed worker. It uses Laravel AI's fake gateway, so it exercises the real driver, coordinator, broker and ledger with only the model call faked. No API key needed to run them.
+The suite covers the whole pipeline, including the approval pause, resuming from a separate request, idempotent publishing, and recovery from a killed worker. It uses Laravel AI's fake gateway, so it exercises the real driver, coordinator, broker and ledger with only the model call faked. No API key needed to run them, and they pass whichever provider you have configured.
 
 ## A note on what this demo skips
 
