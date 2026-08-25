@@ -119,4 +119,50 @@ class ChaosController extends Controller
         ]);
     }
 
+    // Workflow variants. These redirect rather than returning JSON, because
+    // they are pressed from the workflow page and the point is watching the
+    // passes above change.
+
+    public function wfKill(string $runId)
+    {
+        $this->killWorker($runId);
+
+        return back()->with('chaos', 'Worker killed. The run still claims to be running with a dead heartbeat.');
+    }
+
+    public function wfReap(string $runId)
+    {
+        $this->reap();
+
+        return back()->with('chaos', 'Reaper swept. An abandoned run was retried from its last checkpoint.');
+    }
+
+    /**
+     * Re-enter a run that already finished or failed.
+     *
+     * Nothing is recomputed: every step that had a stored result replays, so
+     * the only work that happens is whatever had not happened yet.
+     */
+    public function wfRetry(string $runId)
+    {
+        $run = Run::query()->findOrFail($runId);
+
+        $coordinator = app(\Clutch\Laravel\Runtime\RunCoordinator::class);
+        $retried = $coordinator->retryRun($run);
+
+        return redirect()->route('workflows.show', $retried->id)
+            ->with('chaos', 'Retried. Watch which steps come back as skipped.');
+    }
+
+    public function wfCancel(string $runId)
+    {
+        $run = Run::query()->findOrFail($runId);
+
+        if (! $run->status->isTerminal()) {
+            app(\Clutch\Laravel\Runtime\RunCoordinator::class)
+                ->requestCancellation($run, 'Cancelled from the demo.');
+        }
+
+        return back()->with('chaos', 'Cancellation requested. It stops at the next step boundary, never mid-step.');
+    }
 }

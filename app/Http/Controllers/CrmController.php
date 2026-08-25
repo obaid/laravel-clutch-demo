@@ -65,22 +65,4 @@ class CrmController extends Controller
         ], 'Activity');
     }
 
-    /**
-     * Render a full page, or just the main pane when the shell asks for it.
-     *
-     * The agent panel lives outside the swapped region, so navigating never
-     * interrupts a run it is streaming.
-     *
-     * @param  array<string, mixed>  $data
-     */
-    protected function page(string $view, array $data, string $title)
-    {
-        $data['title'] = $title;
-
-        if (request()->headers->get('X-Pane') === 'main') {
-            return response()->view($view, $data);
-        }
-
-        return view('shell', [...$data, 'pane' => $view]);
-    }
 }

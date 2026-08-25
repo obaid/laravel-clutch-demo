@@ -49,7 +49,7 @@
     <div class="flex-1 p-2 space-y-0.5 text-sm">
         @foreach ([
             ['pipeline','Pipeline'], ['deals','Deals'], ['companies','Companies'],
-            ['contacts','Contacts'], ['activity','Activity'],
+            ['contacts','Contacts'], ['activity','Activity'], ['workflows.index','Workflows'],
         ] as [$route, $label])
             <a href="{{ route($route) }}" data-nav="{{ $route }}"
                class="nav block rounded px-2.5 py-1.5 hover:bg-[var(--soft)] transition-colors">{{ $label }}</a>
