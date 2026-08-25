@@ -177,13 +177,9 @@ The panel is one `EventSource` against `/api/clutch/runs/{run}/events?after={cur
 
 There is no login, so `config/clutch.php` opens the package routes to `web` rather than `auth`. A real application keeps `auth` there, which is what scopes every run, approval and artifact to the participant who owns it.
 
-The interface borrows [PostHog's design language](https://posthog.com/handbook/brand/visual-identity): a warm cream canvas, hairline borders instead of shadows, and one loud accent.
-
 ## Where this came from
 
 The package is [obaid/laravel-clutch](https://github.com/obaid/laravel-clutch), on [Packagist](https://packagist.org/packages/obaid/laravel-clutch), with [documentation here](https://obaid.github.io/laravel-clutch/). It works with any Laravel AI agent, not just this one.
-
-This app also earns its keep as a test. Building it against the published package turned up three bugs that 234 passing unit tests had not: a class reference in the shipped config that pointed at nothing, SSE frames that named their event and so never reached `onmessage`, and a tool ledger that nothing was actually calling. All three needed a real agent run through the real published package to show up.
 
 ## Licence
 
