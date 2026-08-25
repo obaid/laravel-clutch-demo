@@ -14,7 +14,7 @@ This repository is an ordinary Laravel app. [Laravel Clutch](https://github.com/
 
 Split by who owns what:
 
-| | Owned by |
+| Concern | Owned by |
 |---|---|
 | Deals, contacts, Blade views, the panel markup | This demo |
 | `CrmAgent`, its instructions, its seven tools | This demo, using [Laravel AI](https://github.com/laravel/ai) |
@@ -28,35 +28,33 @@ Split by who owns what:
 Take Clutch out and you still have an agent. What you lose is the ability to close the tab, because the run would live and die inside the request that started it.
 
 ```mermaid
-flowchart LR
+flowchart TB
     Panel["Assistant panel<br/>one EventSource"]
 
     subgraph demo[" This demo "]
-        direction TB
         Ctl["AgentController"]
-        Agent["CrmAgent<br/>7 tools"]
-        Crm[("deals · contacts<br/>activity")]
+        Agent["CrmAgent · 7 tools"]
+        Crm[("deals · contacts · activity")]
     end
 
     subgraph pkg[" Laravel Clutch "]
-        direction TB
         Coord["RunCoordinator"]
         Worker["Queue worker"]
         Policy["Clutch::policy()<br/>wraps every tool"]
         Log[("runs · events · approvals<br/>checkpoints · tool ledger")]
     end
 
-    Provider["Laravel AI<br/>→ OpenAI"]
+    Provider["Laravel AI → OpenAI"]
 
     Panel -->|"send a message"| Ctl
     Ctl -->|"queue a run"| Coord
     Coord -->|"dispatch after commit"| Worker
+    Coord --> Log
     Worker -->|"one lease per session"| Agent
     Agent <-->|"prompt and tool loop"| Provider
     Agent -->|"every tool call"| Policy
     Policy -->|"read-only + reversible"| Crm
     Policy -->|"irreversible: park it"| Log
-    Coord --> Log
     Log -->|"replay, then live"| Panel
     Panel -->|"approve, hours later"| Ctl
 
